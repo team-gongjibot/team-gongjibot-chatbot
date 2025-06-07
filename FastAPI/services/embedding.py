@@ -1,3 +1,4 @@
+
 from transformers import AutoTokenizer, AutoModel
 import torch
 
@@ -15,3 +16,4 @@ def embed_question(text):
     with torch.no_grad():
         embeddings = model(**inputs).last_hidden_state[:, 0, :]
     return embeddings.squeeze().numpy()
+
