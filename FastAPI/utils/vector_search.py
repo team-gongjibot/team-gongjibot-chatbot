@@ -11,7 +11,7 @@ import pandas as pd
 def get_doc_by_index(idx):
     return data[idx]
 
-with open("data.json","r",encoding="utf-8") as f:
+with open("final_dataset.json","r",encoding="utf-8") as f:
     data = json.load(f)
 df=pd.DataFrame(data)
 
@@ -23,17 +23,18 @@ doc_embeddings = np.stack(df["embedding"].values)
 index.add(doc_embeddings)
 
 
-def search_similar_docs(vector, top_k=3):
+def search_similar_docs(vector, Index):
+    if Index >= 10:
+        return False
     vector = np.array([vector]).astype('float32')
-    scores, indices = index.search(vector, top_k)
+    scores, indices = index.search(vector, 10)
     
-    result = []
-    for i in indices[0]:
-        if i == -1:
-            continue
-        try:
-            result.append(get_doc_by_index(i))
-        except IndexError:
-            print(f"경고: FAISS 인덱스 {i}가 announcements.json 범위를 벗어났습니다.")
+    # print("\n\n\n")
+    # for i in range(5):
+    #     print(f"{i+1}위 문서 : {df.loc[indices[0][i], 'summary']} \n (거리 : {scores[0][i]:.4f}) (인덱스 : {indices[0][i]})")
+    # print("\n\n\n")
+        
+    docs = df.loc[indices[0][Index], "summary"]
+    print(docs)
     
-    return result
+    return docs

@@ -3,7 +3,9 @@ from pydantic import BaseModel
 from services.embedding import embed_question
 from utils.vector_search import search_similar_docs
 from services.prompt import build_prompt
+from services.prompt import is_invailed_response
 from services.llm import generate_answer
+import re
 
 app = FastAPI()
 
@@ -18,19 +20,28 @@ async def ping():
 async def ask_question(question: Question):
     try:
         q_embedding = embed_question(question.text)
-        related_docs = search_similar_docs(q_embedding)
+        count = 0
+        while(True):
         
-        prompt = build_prompt(question.text, related_docs)
-        answer = generate_answer(prompt)
+            related_docs = search_similar_docs(q_embedding,count)
+            
+            if related_docs == False:
+                answer = "질문에 관한 정보가 너무 적습니다. 질문을 구체화 해서 다시 질문해주세요."
+                break
+            
+            prompt = build_prompt(question.text,related_docs)
+            answer = generate_answer(prompt)
 
+            print(answer)
+            if is_invailed_response(answer):
+                count+=1
+            else:
+                break
+        answer = re.sub(r"[\s\S]*?</think>", "", answer)
+        answer = re.sub(r'<think>', '', answer, flags=re.DOTALL)
+        answer = re.sub(r'#', '', answer, flags=re.DOTALL)
         return {
-            "answer": answer,
-            "source_docs": [
-                {
-                    "id": d["id"],
-                    "title": d["title"]
-                } for d in related_docs
-            ]
+            "answer": answer
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
